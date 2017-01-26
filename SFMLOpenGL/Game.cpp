@@ -2,7 +2,7 @@
 
 static bool flip;
 
-Game::Game() : window(VideoMode(800, 600), "OpenGL Cube Vertex and Fragment Shaders")
+Game::Game() : window(VideoMode(800, 600), "OpenGL Cube Vertex and Fragment Shaders"), m1(1, 0, 0, 0, cos(rotationAngle), sin(rotationAngle), 0, -sin(rotationAngle), cos(rotationAngle)), m2(cos(rotationAngle), 0, sin(rotationAngle), 0, 1, 0, -sin(rotationAngle), 0, cos(rotationAngle))
 {
 }
 
@@ -40,8 +40,8 @@ typedef struct
 	float color[4];
 } Vertex;
 
-Vertex vertex[4];
-GLubyte triangles[4];
+Vertex vertex[8];
+GLubyte triangles[36];
 
 /* Variable to hold the VBO identifier and shader data */
 GLuint	index, //Index to draw
@@ -79,6 +79,22 @@ void Game::initialize()
 	vertex[3].coordinate[1] = -0.5f;
 	vertex[3].coordinate[2] = 0.0f;
 
+	vertex[4].coordinate[0] = -0.5f;
+	vertex[4].coordinate[1] = -0.5f;
+	vertex[4].coordinate[2] = -0.5f;
+
+	vertex[5].coordinate[0] = -0.5f;
+	vertex[5].coordinate[1] = 0.5f;
+	vertex[5].coordinate[2] = -0.5f;
+
+	vertex[6].coordinate[0] = 0.5f;
+	vertex[6].coordinate[1] = 0.5f;
+	vertex[6].coordinate[2] = -0.5f;
+
+	vertex[7].coordinate[0] = 0.5f;
+	vertex[7].coordinate[1] = -0.5f;
+	vertex[7].coordinate[2] = -0.5f;
+
 	vertex[0].color[0] = 0.0f;
 	vertex[0].color[1] = 0.0f;
 	vertex[0].color[2] = 0.0f;
@@ -100,7 +116,18 @@ void Game::initialize()
 	vertex[3].color[3] = 1.0f;
 
 	/*Index of Poly / Triangle to Draw */
-	triangles[0] = 0;   triangles[1] = 1;   triangles[2] = 2;	triangles[3] = 3;
+	triangles[0] = 0;   triangles[1] = 1;   triangles[2] = 2;//front
+	triangles[3] = 0;	triangles[4] = 2;   triangles[5] = 3;
+	triangles[6] = 4;   triangles[7] = 5;   triangles[8] = 6;//back
+	triangles[9] = 4;	triangles[10] = 6;   triangles[11] = 7;
+	triangles[12] = 0;   triangles[13] = 1;   triangles[14] = 4;//Left
+	triangles[15] = 4;	triangles[16] = 5;   triangles[17] = 1;
+	triangles[18] = 2;   triangles[19] = 3;   triangles[20] = 6;//right
+	triangles[21] = 6;	triangles[22] = 7;   triangles[23] = 3;
+	triangles[24] = 1;   triangles[25] = 2;   triangles[26] = 5;//top
+	triangles[27] = 6;	triangles[28] = 5;   triangles[29] = 2;
+	triangles[30] = 0;   triangles[31] = 3;   triangles[32] = 4;//bottom
+	triangles[33] = 7;	triangles[34] = 4;   triangles[35] = 3;
 
 	/* Create a new VBO using VBO id */
 	glGenBuffers(1, vbo);
@@ -114,7 +141,7 @@ void Game::initialize()
 
 	glGenBuffers(1, &index);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLubyte) * 3, triangles, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLubyte) * 36, triangles, GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	/* Vertex Shader which would normally be loaded from an external file */
@@ -150,7 +177,7 @@ void Game::initialize()
 		"in vec4 color;"
 		"out vec4 fColor;"
 		"void main() {"
-		"	fColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);"
+		"	fColor = color + vec4(0.0f, 1.0f, 0.0f, 1.0f);"
 		"}"; //Fragment Shader Src
 
 	DEBUG_MSG("Setting Up Fragment Shader");
@@ -213,7 +240,7 @@ void Game::update()
 			flip = false;
 	}
 
-	if (flip)
+	/*if (flip)
 	{
 		rotationAngle += 0.005f;
 
@@ -221,24 +248,20 @@ void Game::update()
 		{
 			rotationAngle -= 360.0f;
 		}
-	}
+	}*/
 
 	//Change vertex data
-	vertex[0].coordinate[0] += -0.0001f;
-	vertex[0].coordinate[1] += -0.0001f;
-	vertex[0].coordinate[2] += -0.0001f;
+	for (int i = 0; i < 8; i++)
+	{
+		Vector3new vTemp(vertex[i].coordinate[0], vertex[i].coordinate[1], vertex[i].coordinate[2] + 0.25f);
 
-	vertex[1].coordinate[0] += -0.0001f;
-	vertex[1].coordinate[1] += -0.0001f;
-	vertex[1].coordinate[2] += -0.0001f;
+		vTemp = m1 * vTemp;
+		vTemp = m2 * vTemp;
 
-	vertex[2].coordinate[0] += -0.0001f;
-	vertex[2].coordinate[1] += -0.0001f;
-	vertex[2].coordinate[2] += -0.0001f;
-
-	vertex[3].coordinate[0] += -0.0001f;
-	vertex[3].coordinate[1] += -0.0001f;
-	vertex[3].coordinate[2] += -0.0001f;
+		vertex[i].coordinate[0] = vTemp.x;
+		vertex[i].coordinate[1] = vTemp.y;
+		vertex[i].coordinate[2] = vTemp.z - 0.25f;
+	}
 
 #if (DEBUG >= 2)
 	DEBUG_MSG("Update up...");
@@ -256,13 +279,14 @@ void Game::render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glLoadIdentity();
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
 
 	/*	As the data positions will be updated by the this program on the
 		CPU bind the updated data to the GPU for drawing	*/
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 3, vertex, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 36, vertex, GL_STATIC_DRAW);
 
 	/*	Draw Triangle from VBO	(set where to start from as VBO can contain
 		model components that 'are' and 'are not' to be drawn )	*/
@@ -276,7 +300,7 @@ void Game::render()
 	glEnableVertexAttribArray(positionID);
 	glEnableVertexAttribArray(colorID);
 
-	glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_BYTE, (char*)NULL + 0);
+	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, (char*)NULL + 0);
 
 	window.display();
 

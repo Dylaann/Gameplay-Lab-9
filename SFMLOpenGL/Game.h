@@ -15,7 +15,6 @@
 
 using namespace std;
 using namespace sf;
-using namespace gpp;
 
 class Game
 {
@@ -23,6 +22,8 @@ public:
 	Game();
 	~Game();
 	void run();
+
+	float rotationAngle = 0.0001f;
 private:
 	Window window;
 	bool isRunning = false;
@@ -34,7 +35,8 @@ private:
 	Clock clock;
 	Time elapsed;
 
-	float rotationAngle = 0.0f;
+	Matrix3new m1;
+	Matrix3new m2;
 };
 
 #endif
